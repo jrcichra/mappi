@@ -1,0 +1,17 @@
+{
+    "addresses": {
+        "ipv4": "10.0.0.95",
+        "mac": "00:00:00:00:00:00"
+    },
+    "hostnames": [{
+        "name": "",
+        "type": ""
+    }],
+    "status": {
+        "reason": "arp-response",
+        "state": "up"
+    },
+    "vendor": {
+        "00:00:00:00:00:00": "ABC INC"
+    }
+}
