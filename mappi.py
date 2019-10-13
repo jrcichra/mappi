@@ -22,10 +22,10 @@ def getMacAddress(host, ip):
                 mac = macs[0]
                 return mac
             else:
-                return 'UN:KN:OW:N:{}'.format(ip)
+                return None
 
         except KeyError as e:
-            return 'UN:KN:OW:N:{}'.format(ip)
+            return None
 
 
 def getHostName(host, ip):
@@ -65,19 +65,19 @@ def getVendor(host, ip):
             return None
 
 
-def downOthers(macs):
-    sql = "UPDATE devices SET state = 'down' where last_seen < NOW() - INTERVAL 1 HOUR and mac_address not in ("
-    for mac in macs:
-        sql += "'{}',".format(mac)
+def downOthers(ips):
+    sql = "UPDATE devices SET state = 'down' where last_seen < NOW() - INTERVAL 1 HOUR and ip_address not in ("
+    for ip in ips:
+        sql += "'{}',".format(ip)
     sql = sql[:-1]
     sql += ")"
     return sql
 
 
-def getUpsert(o, mac):
-    sql = "INSERT INTO devices (mac_address,"
+def getUpsert(o, ip):
+    sql = "INSERT INTO devices (ip_address,"
     sql += ", ".join(o.keys())
-    sql += ") VALUES ('" + mac + "',"
+    sql += ") VALUES ('" + ip + "',"
     for key in o.keys():
         sql += "'{}',".format(o[key])
     sql = sql[:-1]
@@ -99,36 +99,27 @@ n.scan(hosts='10.0.0.0/24', arguments='-sP -PE -PA21,22,23,80,3389')
 for ip in n.all_hosts():
     host = n[ip]    # extract nmap object
     entity = {}     # object for our db
-    # Determine the mac address, this is our PK
+
     mac = getMacAddress(host, ip)
-    if mac is None:
-        # skip this host
-        logging.error(
-            "I didn't find any mac addresses...can't continue with this ip: {}".format(ip))
-        continue
-    else:
-        # the mac will be our key for the entity array
-        # get the other properties
+    if mac != None and mac != '':
         hostname = getHostName(host, ip)
-        if hostname != None and hostname != '':
-            entity['hostname'] = hostname
+    if hostname != None and hostname != '':
+        entity['hostname'] = hostname
 
-        hostname_type = getHostNameType(host, ip)
-        if hostname_type != None and hostname_type != '':
-            entity['hostname_type'] = hostname_type
+    hostname_type = getHostNameType(host, ip)
+    if hostname_type != None and hostname_type != '':
+        entity['hostname_type'] = hostname_type
 
-        entity['ip_address'] = ip
+    state = getState(host, ip)
+    if state != None and state != '':
+        entity['state'] = state
 
-        state = getState(host, ip)
-        if state != None and state != '':
-            entity['state'] = state
+    vendor = getVendor(host, ip)
+    if vendor != None and vendor != '':
+        entity['vendor'] = vendor
 
-        vendor = getVendor(host, ip)
-        if vendor != None and vendor != '':
-            entity['vendor'] = vendor
-
-        # add this entity to our list of entities
-        entities[mac] = entity
+    # add this entity to our list of entities
+    entities[ip] = entity
 
 # We've looped through all our entities, lets try and upsert them in a single transaction
 
