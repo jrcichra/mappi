@@ -10,6 +10,7 @@ logging.basicConfig(level=logging.DEBUG,
 
 # Change to match your LAN
 PREFIX = "10.0.0"
+DOMAIN = "PK5001Z"
 # Enable if you want to write out a coreDNS hosts file based on the DB data
 COREDNS = True
 COREDNSPATH = "/home/pi/.mappihosts"
@@ -75,7 +76,7 @@ logging.info("Found {} devices on this round.".format(found))
 
 # Establish DB connection:
 
-db = pymysql.connect("localhost", "mappi", "password", "mappi",
+db = pymysql.connect("localhost", "mappi", "test", "mappi",
                      cursorclass=pymysql.cursors.DictCursor)
 try:
     cursor = db.cursor()
@@ -95,9 +96,10 @@ if COREDNS:
         cursor.execute("SELECT ip_address, hostname FROM devices")
         rows = cursor.fetchall()
         for row in rows:
-            ip = row[0]
-            host = row[1]
-            f.write("{}\t{}\n".format(ip, host))
+            ip = row['ip_address']
+            host = row['hostname']
+            f.write("{}    {}    {}\n".format(
+                ip, host, host.replace(".{}".format(DOMAIN), '')))
 
 db.close()
 logging.info("Finished a round of mappi.")
