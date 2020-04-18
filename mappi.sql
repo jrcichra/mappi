@@ -1,11 +1,9 @@
 create database mappi;
 
-create table mappi.devices (
-ip_address varchar(255) primary key,
-hostname varchar(255),
-hostname_type varchar(255),
-mac_address varchar(255),
-state varchar(10),
-vendor varchar(255),
-last_seen timestamp default CURRENT_TIMESTAMP,
-first_seen timestamp default CURRENT_TIMESTAMP );
+CREATE TABLE `mappi`.`devices` (
+  `ip_address` varchar(255) NOT NULL,
+  `hostname` varchar(255) DEFAULT NULL,
+  `last_seen` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `first_seen` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`ip_address`)
+)

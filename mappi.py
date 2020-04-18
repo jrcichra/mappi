@@ -1,68 +1,15 @@
-import nmap
-import json
+#!/usr/bin/python3
+
+import socket
 import logging
 import pymysql
+import os
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s:%(levelname)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
 
-
-def getMacAddress(host, ip):
-    try:
-        mac = host['addresses']['mac']
-        return mac
-    except KeyError as e:
-        try:
-            # There's the possibility of more than one key in this...
-            macs = list(host['vendor'].keys())
-            if len(macs) >= 1:
-                if len(macs) > 1:
-                    logging.warn(
-                        "There is more than one mac address under vendor for ip: {}".format(ip))
-                mac = macs[0]
-                return mac
-            else:
-                return None
-
-        except KeyError as e:
-            return None
-
-
-def getHostName(host, ip):
-    try:
-        hostname = host['hostnames'][0]['name']
-        return hostname
-    except KeyError as e:
-        return None
-
-
-def getHostNameType(host, ip):
-    try:
-        host_type = host['hostnames'][0]['type']
-        return host_type
-    except KeyError as e:
-        return None
-
-
-def getState(host, ip):
-    try:
-        state = host['status']['state']
-        return state
-    except KeyError as e:
-        return None
-
-
-def getVendor(host, ip):
-    # Need this for the key
-    mac = getMacAddress(host, ip)
-    if mac is None:
-        return None
-    else:
-        try:
-            vendor = host['vendor'][mac]
-            return vendor
-        except KeyError as e:
-            return None
+# Change to match your LAN
+PREFIX = "10.0.0"
 
 
 def downOthers(ips):
@@ -75,9 +22,9 @@ def downOthers(ips):
 
 
 def getUpsert(o, ip):
-    sql = "INSERT INTO devices (ip_address,"
+    sql = "INSERT INTO devices (ip_address,first_seen,"
     sql += ", ".join(o.keys())
-    sql += ") VALUES ('" + ip + "',"
+    sql += ") VALUES ('" + ip + "',now(),"
     for key in o.keys():
         sql += "'{}',".format(o[key])
     sql = sql[:-1]
@@ -91,35 +38,28 @@ def getUpsert(o, ip):
 
 
 logging.info("Starting a round of mappi.")
-n = nmap.PortScanner()  # nmap object
 entities = {}           # hash of things on the network
-# Scan the network
-n.scan(hosts='10.0.0.0/24', arguments='-sP -PE -PA21,22,23,80,3389')
 # Loop through all the hosts
-for ip in n.all_hosts():
-    host = n[ip]    # extract nmap object
+ip = 1
+while ip < 255:
     entity = {}     # object for our db
+    fullip = "{}.{}".format(PREFIX, ip)
+    try:
+        h = socket.gethostbyaddr(fullip)[0]
+        logging.debug("h={}".format(h))
+        entity['hostname'] = h
+        if os.system("ping {} -c 1".format(fullip)) == 0:
+            entity['state'] = 'up'
+        else:
+            entity['state'] = 'down'
+        if entity['state'] == 'up':
+            # add this entity to our list of up entities
+            entities[fullip] = entity
+    except Exception as e:
+        print("Error on ip: {} - {}".format(fullip, e))
 
-    mac = getMacAddress(host, ip)
-    if mac != None and mac != '':
-        hostname = getHostName(host, ip)
-    if hostname != None and hostname != '':
-        entity['hostname'] = hostname
-
-    hostname_type = getHostNameType(host, ip)
-    if hostname_type != None and hostname_type != '':
-        entity['hostname_type'] = hostname_type
-
-    state = getState(host, ip)
-    if state != None and state != '':
-        entity['state'] = state
-
-    vendor = getVendor(host, ip)
-    if vendor != None and vendor != '':
-        entity['vendor'] = vendor
-
-    # add this entity to our list of entities
-    entities[ip] = entity
+    # Inc
+    ip += 1
 
 # We've looped through all our entities, lets try and upsert them in a single transaction
 
@@ -140,6 +80,7 @@ db = pymysql.connect("localhost", "mappi", "password", "mappi",
 try:
     cursor = db.cursor()
     for query in queries:
+        logging.debug("About to execute: {}".format(query))
         cursor.execute(query)
 except:
     db.rollback()
