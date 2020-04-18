@@ -88,7 +88,6 @@ except:
     raise
 else:
     db.commit()
-    db.close()
 
 # If they have COREDNS support on, write out a file that coreDNS can serve
 if COREDNS:
@@ -100,4 +99,5 @@ if COREDNS:
             host = row[1]
             f.write("{}\t{}\n".format(ip, host))
 
+db.close()
 logging.info("Finished a round of mappi.")
