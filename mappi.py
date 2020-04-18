@@ -56,7 +56,7 @@ while ip < 255:
             # add this entity to our list of up entities
             entities[fullip] = entity
     except Exception as e:
-        print("Error on ip: {} - {}".format(fullip, e))
+        logging.error("Error on ip: {} - {}".format(fullip, e))
 
     # Inc
     ip += 1
