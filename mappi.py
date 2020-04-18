@@ -70,8 +70,6 @@ for e in entities:
     found += 1
 logging.info("Found {} devices on this round.".format(found))
 
-queries.append(downOthers(list(entities.keys())))
-
 # Establish DB connection:
 
 db = pymysql.connect("localhost", "mappi", "password", "mappi",
