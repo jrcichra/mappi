@@ -52,9 +52,8 @@ while ip < 255:
             entity['state'] = 'up'
         else:
             entity['state'] = 'down'
-        if entity['state'] == 'up':
-            # add this entity to our list of up entities
-            entities[fullip] = entity
+        # add this entity to our list of up entities
+        entities[fullip] = entity
     except Exception as e:
         logging.error("Error on ip: {} - {}".format(fullip, e))
 
