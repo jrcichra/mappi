@@ -10,6 +10,9 @@ logging.basicConfig(level=logging.DEBUG,
 
 # Change to match your LAN
 PREFIX = "10.0.0"
+# Enable if you want to write out a coreDNS hosts file based on the DB data
+COREDNS = True
+COREDNSPATH = "/home/pi/.mappihosts"
 
 
 def downOthers(ips):
@@ -86,5 +89,15 @@ except:
 else:
     db.commit()
     db.close()
+
+# If they have COREDNS support on, write out a file that coreDNS can serve
+if COREDNS:
+    with open(COREDNSPATH, 'w') as f:
+        cursor.execute("SELECT ip_address, hostname FROM devices")
+        rows = cursor.fetchall()
+        for row in rows:
+            ip = row[0]
+            host = row[1]
+            f.write("{}\t{}\n".format(ip, host))
 
 logging.info("Finished a round of mappi.")
