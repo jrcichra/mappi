@@ -100,7 +100,7 @@ else:
 if COREDNS:
     with open(COREDNSPATH, 'w') as f:
         cursor.execute(
-            "SELECT ip_address, hostname FROM devices ORDER BY CAST(REPLACE(ip_address,'.','') AS INT)")
+            "SELECT ip_address, hostname FROM devices WHERE hostname IS NOT NULL ORDER BY CAST(REPLACE(ip_address,'.','') AS INT)")
         rows = cursor.fetchall()
         with open(PREHOSTS, 'r') as r:
             for line in r.readlines():
