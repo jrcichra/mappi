@@ -91,10 +91,10 @@ try:
     # Find hostnames that have more than one IP. If IPs > 1, clear the hostname on those which are down
     clear_old = """
         update devices set hostname = null where ip_address in (
-            select down.ip_address from devices
+            select down.ip_address from devices d
             left join (select hostname,state,ip_address from devices where state = 'down') down
-            on devices.hostname = down.hostname
-            and devices.state <> down.state
+            on d.hostname = down.hostname
+            and d.state <> down.state
             where down.hostname is not null
         )
     """
