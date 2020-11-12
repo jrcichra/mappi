@@ -88,14 +88,23 @@ try:
     for query in queries:
         logging.debug(f"About to execute: {query}")
         cursor.execute(query)
+    # Find hostnames that have more than one IP. If IPs > 1, clear the hostname on those which are down
+    clear_old = """
+        update devices set hostname = null where ip_address in (
+            select down.ip_address from devices
+            left join (select hostname,state,ip_address from devices where state = 'down') down
+            on devices.hostname = down.hostname
+            and devices.state <> down.state
+            where down.hostname is not null
+        )
+    """
+    cursor.execute(clear_old)
 except:
     db.rollback()
     db.close()
     raise
 else:
     db.commit()
-
-# Find hostnames that have more than one IP. If IPs > 1, delete all that are down
 
 
 # If they have COREDNS support on, write out a file that coreDNS can serve
