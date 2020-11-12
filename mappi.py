@@ -14,7 +14,7 @@ PREFIX = "10.0.0"
 DOMAIN = "PK5001Z"
 # Enable if you want to write out a coreDNS hosts file based on the DB data
 COREDNS = True
-COREDNSPATH = "/home/pi/.mappihosts"
+COREDNSPATH = "/home/pi/coredns"
 # Prepend this hosts file
 PREHOSTS = "/home/pi/coredns/prehosts"
 
