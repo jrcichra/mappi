@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import subprocess
+import threading
 import logging
 import pymysql
 import os
@@ -31,14 +32,8 @@ def getUpsert(o, ip):
     sql = sql[:-1]
     return sql
 
-### MAIN ###
 
-
-logging.info("Starting a round of mappi.")
-entities = {}           # hash of things on the network
-# Loop through all the hosts
-ip = 1
-while ip < 255:
+def check_ip(entities, ip):
     entity = {}     # object for our db
     fullip = f"{PREFIX}.{ip}"
     h = subprocess.check_output(
@@ -54,8 +49,23 @@ while ip < 255:
         entity['state'] = 'down'
     # add this entity to our list of entities
     entities[fullip] = entity
+    ### MAIN ###
+
+
+logging.info("Starting a round of mappi.")
+entities = {}           # hash of things on the network
+threads = []            # array of threads to wait for
+# Loop through all the hosts
+ip = 1
+while ip < 255:
+    t = threading.Thread(target=check_ip, args=(entities, ip))
+    threads.append(t)
+    t.start()
     # Inc
     ip += 1
+# wait for all the threads to complete
+for thread in threads:
+    thread.join()
 
 # We've looped through all our entities, lets try and upsert them in a single transaction
 
