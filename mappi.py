@@ -98,6 +98,7 @@ try:
             where down.hostname is not null
         )
     """
+    logging.debug(f"About to execute: {clear_old}")
     cursor.execute(clear_old)
 except:
     db.rollback()
