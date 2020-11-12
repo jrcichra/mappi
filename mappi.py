@@ -26,7 +26,9 @@ def getUpsert(o, ip):
     for key in o.keys():
         sql += f"'{o[key]}',"
     sql = sql[:-1]
-    sql += ") ON DUPLICATE KEY UPDATE last_seen=now(),"
+    sql += ") ON DUPLICATE KEY UPDATE "
+    if o['state'] == 'up':
+        sql += 'last_seen=now(),'
     for key in o.keys():
         sql += f"{key}='{o[key]}',"
     sql = sql[:-1]
