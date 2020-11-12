@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import socket
+import subprocess
 import logging
 import pymysql
 import os
@@ -14,6 +14,8 @@ DOMAIN = "PK5001Z"
 # Enable if you want to write out a coreDNS hosts file based on the DB data
 COREDNS = True
 COREDNSPATH = "/home/pi/.mappihosts"
+# Prepend this hosts file
+PREHOSTS = "/home/pi/coredns/prehosts"
 
 
 def getUpsert(o, ip):
@@ -39,11 +41,12 @@ ip = 1
 while ip < 255:
     entity = {}     # object for our db
     fullip = f"{PREFIX}.{ip}"
-    try:
-        h = socket.gethostbyaddr(fullip)[0]
-        logging.debug(f"h={h}")
+    h = subprocess.check_output(
+        f"dig +short @10.0.0.1 -x {fullip}", shell=True)[:-2].decode()
+    if h != '':
+        logging.debug("fullip={}, h={}".format(fullip, h))
         entity['hostname'] = h
-    except Exception as e:
+    else:
         logging.error(f"Couldn't get hostname for ip: {fullip} - {e}")
     if os.system(f"ping {fullip} -c 1") == 0:
         entity['state'] = 'up'
@@ -86,8 +89,13 @@ else:
 # If they have COREDNS support on, write out a file that coreDNS can serve
 if COREDNS:
     with open(COREDNSPATH, 'w') as f:
-        cursor.execute("SELECT ip_address, hostname FROM devices")
+        cursor.execute(
+            "SELECT ip_address, hostname FROM devices ORDER BY CAST(REPLACE(ip_address,'.','') AS INT)")
         rows = cursor.fetchall()
+        with open(PREHOSTS, 'r') as r:
+            for line in r.readlines():
+                f.write(line)
+
         for row in rows:
             ip = row['ip_address']
             host = row['hostname']
