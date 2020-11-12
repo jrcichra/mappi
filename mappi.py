@@ -16,15 +16,6 @@ COREDNS = True
 COREDNSPATH = "/home/pi/.mappihosts"
 
 
-def downOthers(ips):
-    sql = "UPDATE devices SET state = 'down' where last_seen < NOW() - INTERVAL 1 HOUR and ip_address not in ("
-    for ip in ips:
-        sql += f"'{ip}',"
-    sql = sql[:-1]
-    sql += ")"
-    return sql
-
-
 def getUpsert(o, ip):
     sql = "INSERT INTO devices (ip_address,first_seen,"
     sql += ", ".join(o.keys())
@@ -52,15 +43,14 @@ while ip < 255:
         h = socket.gethostbyaddr(fullip)[0]
         logging.debug(f"h={h}")
         entity['hostname'] = h
-        if os.system(f"ping {fullip} -c 1") == 0:
-            entity['state'] = 'up'
-        else:
-            entity['state'] = 'down'
-        # add this entity to our list of up entities
-        entities[fullip] = entity
     except Exception as e:
-        logging.error(f"Error on ip: {fullip} - {e}")
-
+        logging.error(f"Couldn't get hostname for ip: {fullip} - {e}")
+    if os.system(f"ping {fullip} -c 1") == 0:
+        entity['state'] = 'up'
+    else:
+        entity['state'] = 'down'
+    # add this entity to our list of entities
+    entities[fullip] = entity
     # Inc
     ip += 1
 
@@ -89,6 +79,9 @@ except:
     raise
 else:
     db.commit()
+
+# Find hostnames that have more than one IP. If IPs > 1, delete all that are down
+
 
 # If they have COREDNS support on, write out a file that coreDNS can serve
 if COREDNS:
