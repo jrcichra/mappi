@@ -47,7 +47,7 @@ while ip < 255:
         logging.debug("fullip={}, h={}".format(fullip, h))
         entity['hostname'] = h
     else:
-        logging.error(f"Couldn't get hostname for ip: {fullip} - {e}")
+        logging.error(f"Couldn't get hostname for ip: {fullip}")
     if os.system(f"ping {fullip} -c 1") == 0:
         entity['state'] = 'up'
     else:
