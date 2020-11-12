@@ -19,7 +19,7 @@ COREDNSPATH = "/home/pi/.mappihosts"
 def downOthers(ips):
     sql = "UPDATE devices SET state = 'down' where last_seen < NOW() - INTERVAL 1 HOUR and ip_address not in ("
     for ip in ips:
-        sql += "'{}',".format(ip)
+        sql += f"'{ip}',"
     sql = sql[:-1]
     sql += ")"
     return sql
@@ -28,13 +28,13 @@ def downOthers(ips):
 def getUpsert(o, ip):
     sql = "INSERT INTO devices (ip_address,first_seen,"
     sql += ", ".join(o.keys())
-    sql += ") VALUES ('" + ip + "',now(),"
+    sql += f") VALUES ('{ip}',now(),"
     for key in o.keys():
-        sql += "'{}',".format(o[key])
+        sql += f"'{o[key]}',"
     sql = sql[:-1]
     sql += ") ON DUPLICATE KEY UPDATE last_seen=now(),"
     for key in o.keys():
-        sql += "{}='{}',".format(key, o[key])
+        sql += f"{key}='{o[key]}',"
     sql = sql[:-1]
     return sql
 
@@ -47,19 +47,19 @@ entities = {}           # hash of things on the network
 ip = 1
 while ip < 255:
     entity = {}     # object for our db
-    fullip = "{}.{}".format(PREFIX, ip)
+    fullip = f"{PREFIX}.{ip}"
     try:
         h = socket.gethostbyaddr(fullip)[0]
-        logging.debug("h={}".format(h))
+        logging.debug(f"h={h}")
         entity['hostname'] = h
-        if os.system("ping {} -c 1".format(fullip)) == 0:
+        if os.system(f"ping {fullip} -c 1") == 0:
             entity['state'] = 'up'
         else:
             entity['state'] = 'down'
         # add this entity to our list of up entities
         entities[fullip] = entity
     except Exception as e:
-        logging.error("Error on ip: {} - {}".format(fullip, e))
+        logging.error(f"Error on ip: {fullip} - {e}")
 
     # Inc
     ip += 1
@@ -72,7 +72,7 @@ found = 0     # devices we found
 for e in entities:
     queries.append(getUpsert(entities[e], e))
     found += 1
-logging.info("Found {} devices on this round.".format(found))
+logging.info(f"Found {found} devices on this round.")
 
 # Establish DB connection:
 
@@ -81,7 +81,7 @@ db = pymysql.connect("localhost", "mappi", "test", "mappi",
 try:
     cursor = db.cursor()
     for query in queries:
-        logging.debug("About to execute: {}".format(query))
+        logging.debug(f"About to execute: {query}")
         cursor.execute(query)
 except:
     db.rollback()
@@ -98,8 +98,7 @@ if COREDNS:
         for row in rows:
             ip = row['ip_address']
             host = row['hostname']
-            f.write("{}    {}    {}\n".format(
-                ip, host, host.replace(".{}".format(DOMAIN), '')))
+            f.write(f"{ip}    {host}    {host.replace(f'.{DOMAIN}','')}\n")
 
 db.close()
 logging.info("Finished a round of mappi.")
